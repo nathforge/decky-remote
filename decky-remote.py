@@ -165,7 +165,7 @@ def decky_ws_request(url: str, body: dict) -> dict:
             host=host,
             port=port,
             ssl=ssl_context,
-            server_hostname=host if use_ssl else None,
+            server_hostname=host if is_https else None,
         )
 
         try:
