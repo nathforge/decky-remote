@@ -1,12 +1,12 @@
 # Decky Remote
 
-I wrote this to quickly reload [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugins, e.g:
+I wrote this to quickly reload [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugins:
 
 ```shell
 $ decky-remote.py ssh loader/reload_plugin "Example Plugin"
 ```
 
-However it can call any websocket route, e.g:
+However it can call any websocket route:
 
 ```shell
 $ decky-remote.py ssh utilities/ping
