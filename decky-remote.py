@@ -59,11 +59,19 @@ def main():
 
 
 def cmd_ssh(destination: str, url: str, route: str, args: list[str]) -> None:
-    run(lambda body: ssh_rpc(destination, decky_ws_request, url, body), route, args)
+    run(
+        lambda body: ssh_rpc(destination, decky_ws_request, url, body),
+        route,
+        args,
+    )
 
 
 def cmd_http(url: str, route: str, args: list[str]) -> None:
-    run(lambda body: decky_ws_request(url, body), route, args)
+    run(
+        lambda body: decky_ws_request(url, body),
+        route,
+        args,
+    )
 
 
 def run(request: Callable[[dict], dict], route: str, args: list[str]) -> None:
@@ -196,11 +204,11 @@ def decky_ws_request(url: str, body: dict) -> dict:
         handshake = (
             f"GET {path} HTTP/1.1\r\n"
             f"Host: {host}\r\n"
-            "Upgrade: websocket\r\n"
-            "Connection: Upgrade\r\n"
+            f"Upgrade: websocket\r\n"
+            f"Connection: Upgrade\r\n"
             f"Sec-WebSocket-Key: {websocket_key}\r\n"
-            "Sec-WebSocket-Version: 13\r\n"
-            "\r\n"
+            f"Sec-WebSocket-Version: 13\r\n"
+            f"\r\n"
         )
 
         writer.write(handshake.encode("utf-8"))
