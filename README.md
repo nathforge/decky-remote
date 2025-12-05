@@ -1,6 +1,6 @@
 # Decky Remote
 
-I wrote this to quickly reload plugins, e.g:
+I wrote this to quickly reload [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugins, e.g:
 
 ```shell
 $ decky-remote.py ssh loader/reload_plugin "Example Plugin"
