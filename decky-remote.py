@@ -13,7 +13,6 @@ Calls Decky Loader websocket routes over SSH, e.g:
 import argparse
 import inspect
 import json
-import shlex
 import subprocess
 from typing import Callable
 
@@ -105,7 +104,7 @@ def ssh_rpc(destination: str, func: Callable, *args, **kwargs):
         "print(json.dumps(result))"
     )
 
-    cmd = ["ssh", shlex.quote(destination), "python3"]
+    cmd = ["ssh", destination, "python3"]
 
     result = subprocess.run(cmd, input=script, capture_output=True, text=True)
 
