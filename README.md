@@ -10,7 +10,7 @@ However it can call any Decky Loader websocket route, e.g:
 
 ```shell
 $ decky-remote.py ssh utilities/ping
-$ decky-remote.py http loader/call_plugin_method "Example Plugin" start_timer
+$ decky-remote.py ssh loader/call_plugin_method "Example Plugin" start_timer
 ```
 
 ⚠️ This is a development tool that can break at any point. It is not part of Decky.
