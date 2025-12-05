@@ -153,10 +153,10 @@ def decky_ws_request(url: str, body: dict) -> dict:
         parsed = urlparse(url)
         host = parsed.hostname
         assert host
-        port = parsed.port or (443 if parsed.scheme in ("https", "wss") else 80)
+        port = parsed.port or (443 if parsed.scheme in "https" else 80)
         path = f"/ws?auth={token}"
 
-        use_ssl = parsed.scheme in ("wss", "https")
+        use_ssl = parsed.scheme == "https"
         ssl_context = None
         if use_ssl:
             ssl_context = ssl.create_default_context()
