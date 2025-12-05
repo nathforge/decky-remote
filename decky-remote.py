@@ -101,7 +101,7 @@ def ssh_rpc(destination: str, func: Callable, *args, **kwargs):
         f"import json\n"
         f"{inspect.getsource(func)}\n"
         f"result = {func.__name__}(*{repr(args)}, **{repr(kwargs)})\n"
-        "print(json.dumps(result))"
+        f"print(json.dumps(result))"
     )
 
     cmd = ["ssh", "--", destination, "python3"]
@@ -142,7 +142,7 @@ def decky_ws_request(url: str, body: dict) -> dict:
         return message
 
     def get_auth_token(url):
-        res = urlopen(url + "/auth/token")
+        res = urlopen(f"{url}/auth/token")
         if res.status != 200:
             raise Exception(f"Unexpected HTTP {res.status} from /auth/token")
         return res.read().decode()
