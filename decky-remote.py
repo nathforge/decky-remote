@@ -151,14 +151,14 @@ def decky_ws_request(url: str, body: dict) -> dict:
         url: str, token: str, body: str
     ) -> None | dict:
         parsed = urlparse(url)
+        is_https = parsed.scheme == "https"
         host = parsed.hostname
         assert host
-        port = parsed.port or (443 if parsed.scheme in "https" else 80)
+        port = parsed.port or (443 if is_https else 80)
         path = f"/ws?auth={token}"
 
-        use_ssl = parsed.scheme == "https"
         ssl_context = None
-        if use_ssl:
+        if is_https:
             ssl_context = ssl.create_default_context()
 
         reader, writer = await asyncio.open_connection(
