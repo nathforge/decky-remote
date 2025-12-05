@@ -20,4 +20,4 @@ See [the Decky Loader source](https://github.com/search?q=repo%3ASteamDeckHomebr
 ## How does it work?
 
 Decky Loader runs an HTTP server on http://localhost:1337. We connect to the
-Deck over SSH and call the HTTP server.
+Deck over SSH and call the websocket endpoint.
