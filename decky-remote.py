@@ -22,7 +22,7 @@ def main():
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 
-    ssh_parser = subparsers.add_parser("ssh", help="Execute  call over SSH")
+    ssh_parser = subparsers.add_parser("ssh", help="Execute call over SSH")
     ssh_parser.add_argument(
         "--destination",
         default="deck@steamdeck.local",
