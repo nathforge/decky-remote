@@ -104,7 +104,7 @@ def ssh_rpc(destination: str, func: Callable, *args, **kwargs):
         "print(json.dumps(result))"
     )
 
-    cmd = ["ssh", destination, "python3"]
+    cmd = ["ssh", "--", destination, "python3"]
 
     result = subprocess.run(cmd, input=script, capture_output=True, text=True)
 
