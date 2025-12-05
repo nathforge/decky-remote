@@ -6,7 +6,7 @@ I wrote this to quickly reload [Decky Loader](https://github.com/SteamDeckHomebr
 $ decky-remote.py ssh loader/reload_plugin "Example Plugin"
 ```
 
-However it can call any Decky Loader websocket route, e.g:
+However it can call any websocket route, e.g:
 
 ```shell
 $ decky-remote.py ssh utilities/ping
