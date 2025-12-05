@@ -15,7 +15,7 @@ $ decky-remote.py ssh loader/call_plugin_method "Example Plugin" start_timer
 
 ⚠️ This is a development tool that can break at any point. It is not part of Decky.
 
-See [the Decky Loader source](https://github.com/search?q=repo%3ASteamDeckHomebrew%2Fdecky-loader%20add_route&type=code) for available routes.
+See [the Decky Loader source](https://github.com/search?q=repo%3ASteamDeckHomebrew%2Fdecky-loader%20ws.add_route&type=code) for available routes.
 
 ## How does it work?
 
