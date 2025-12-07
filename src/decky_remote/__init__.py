@@ -1,17 +1,15 @@
-#!/usr/bin/env python
-
 """
 Decky Remote.
 
 Calls Decky Loader websocket routes over SSH, e.g:
 
-    $ decky-remote.py ssh utilities/ping
-    $ decky-remote.py ssh loader/reload_plugin "Example Plugin"
-    $ decky-remote.py ssh loader/call_plugin_method "Example Plugin" start_timer
+    $ decky-remote ssh utilities/ping
+    $ decky-remote ssh loader/reload_plugin "Example Plugin"
+    $ decky-remote ssh loader/call_plugin_method "Example Plugin" start_timer
 
 Tails plugin logs:
 
-    $ decky-remote.py plugin logs "Example Plugin"
+    $ decky-remote plugin logs "Example Plugin"
 """
 
 import argparse
@@ -426,7 +424,3 @@ def decky_tail_plugin_logs(plugin_name: str):
             log_file = latest_file
 
         time.sleep(dir_poll_interval_secs)
-
-
-if __name__ == "__main__":
-    main()
