@@ -8,6 +8,10 @@ Calls Decky Loader websocket routes over SSH, e.g:
     $ decky-remote.py ssh utilities/ping
     $ decky-remote.py ssh loader/reload_plugin "Example Plugin"
     $ decky-remote.py ssh loader/call_plugin_method "Example Plugin" start_timer
+
+Tails plugin logs:
+
+    $ decky-remote.py plugin logs "Example Plugin"
 """
 
 import argparse

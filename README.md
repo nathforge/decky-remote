@@ -13,6 +13,12 @@ $ decky-remote.py ssh utilities/ping
 $ decky-remote.py ssh loader/call_plugin_method "Example Plugin" start_timer
 ```
 
+Or tail plugin logs, automatically picking up new log files:
+
+```shell
+$ decky-remote.py plugin logs "Example Plugin"
+```
+
 ⚠️ This is a development tool that can break at any point. It is not part of Decky.
 
 See [the Decky Loader source](https://github.com/search?q=repo%3ASteamDeckHomebrew%2Fdecky-loader%20ws.add_route&type=code) for available routes.
