@@ -14,9 +14,6 @@ def decky_tail_plugin_logs(plugin_name: str):
     dir_poll_interval_secs = 0.25
     tail_terminate_timeout_secs = 2
 
-    class NotSet:
-        pass
-
     for basename in (
         plugin_name,  # Original plugin name
         plugin_name.replace(" ", "-"),  # "decky plugin build" replaces " " with "-"
@@ -27,7 +24,8 @@ def decky_tail_plugin_logs(plugin_name: str):
     else:
         raise Exception("Can't find plugin log directory")
 
-    log_file: type[NotSet] | None | Path = NotSet
+    first_loop = True
+    log_file: None | Path = None
     tail_process: None | subprocess.Popen = None
     while True:
         try:
@@ -38,7 +36,7 @@ def decky_tail_plugin_logs(plugin_name: str):
         except ValueError:
             latest_file = None
 
-        if latest_file != log_file:
+        if first_loop or latest_file != log_file:
             if tail_process:
                 try:
                     tail_process.terminate()
@@ -52,6 +50,6 @@ def decky_tail_plugin_logs(plugin_name: str):
             else:
                 print("\033[33mWaiting for a log file\033[m", file=sys.stderr)
 
-            log_file = latest_file
-
+        log_file = latest_file
+        first_loop = False
         time.sleep(dir_poll_interval_secs)
