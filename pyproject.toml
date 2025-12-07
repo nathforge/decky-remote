@@ -1,21 +1,20 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "decky-remote"
-version = "0.2.0"
+dynamic = ["version"]
 description = "Development tool for Decky plugins"
 readme = "README.md"
 requires-python = ">=3.8"
-license = "GPL-3.0-or-later"
+license = {text = "GPL-3.0-or-later"}
 authors = [
     { name = "Nathan Reynolds" }
 ]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
@@ -32,3 +31,5 @@ Repository = "https://github.com/nathforge/decky-remote"
 
 [tool.uv]
 dev-dependencies = []
+
+[tool.setuptools_scm]
