@@ -43,6 +43,7 @@ def decky_tail_plugin_logs(plugin_name: str):
                     tail_process.wait(timeout=tail_terminate_timeout_secs)
                 except Exception:
                     tail_process.kill()
+                tail_process = None
 
             if latest_file:
                 print(f"\033[33mTailing {latest_file}\033[m", file=sys.stderr)
