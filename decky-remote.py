@@ -14,7 +14,7 @@ import argparse
 import inspect
 import json
 import subprocess
-from typing import Callable
+from typing import Any, Callable
 
 
 def main():
@@ -47,6 +47,20 @@ def main():
     http_parser.add_argument("args", help="Route arguments", nargs="*")
     http_parser.set_defaults(func=cmd_http)
 
+    plugin_parser = subparsers.add_parser("plugin")
+    plugin_subparsers = plugin_parser.add_subparsers(
+        dest="plugin_command", required=True
+    )
+
+    plugin_logs_parser = plugin_subparsers.add_parser("logs")
+    plugin_logs_parser.add_argument(
+        "--destination",
+        default="deck@steamdeck.local",
+        help="Destination user@host (default: deck@steamdeck.local)",
+    )
+    plugin_logs_parser.add_argument("plugin_name", help="Plugin name")
+    plugin_logs_parser.set_defaults(func=cmd_plugin_logs)
+
     args = parser.parse_args()
 
     if args.func is cmd_ssh:
@@ -55,26 +69,52 @@ def main():
     if args.func is cmd_http:
         return cmd_http(args.url, args.route, args.args)
 
+    if args.func is cmd_plugin_logs:
+        return cmd_plugin_logs(args.destination, args.plugin_name)
+
     raise Exception("Unimplemented command")
 
 
-def cmd_ssh(destination: str, url: str, route: str, args: list[str]) -> None:
-    run(
-        lambda body: ssh_rpc(destination, decky_ws_request, url, body),
+def cmd_ssh(
+    destination: str,
+    url: str,
+    route: str,
+    args: list[str],
+) -> None:
+    ssh_rpc_decky_ws_request = make_ssh_rpc(
+        destination,
+        decky_ws_request,
+        capture_stdout=True,
+    )
+    _cmd_decky_ws_request(
+        lambda body: ssh_rpc_decky_ws_request(url, body),
         route,
         args,
     )
 
 
 def cmd_http(url: str, route: str, args: list[str]) -> None:
-    run(
+    _cmd_decky_ws_request(
         lambda body: decky_ws_request(url, body),
         route,
         args,
     )
 
 
-def run(request: Callable[[dict], dict], route: str, args: list[str]) -> None:
+def cmd_plugin_logs(destination: str, plugin_name: str) -> None:
+    ssh_rpc_decky_tail_plugin_logs = make_ssh_rpc(
+        destination,
+        decky_tail_plugin_logs,
+        capture_stdout=False,
+    )
+    ssh_rpc_decky_tail_plugin_logs(plugin_name)
+
+
+def _cmd_decky_ws_request(
+    request: Callable[[dict], Any],
+    route: str,
+    args: list[str],
+) -> None:
     """
     Make a request and print the result.
     """
@@ -98,28 +138,41 @@ def run(request: Callable[[dict], dict], route: str, args: list[str]) -> None:
     raise Exception(f"Unknown type in {res_message}")
 
 
-def ssh_rpc(destination: str, func: Callable, *args, **kwargs):
+def make_ssh_rpc(
+    destination: str,
+    func: Callable,
+    capture_stdout,
+):
     """
     Run a Python function on a remote machine via SSH.
 
     The function must be self-contained and return a JSON-encodable result.
     """
 
-    script = (
-        f"import json\n"
-        f"{inspect.getsource(func)}\n"
-        f"result = {func.__name__}(*{repr(args)}, **{repr(kwargs)})\n"
-        f"print(json.dumps(result))"
-    )
+    def ssh_rpc(*args, **kwargs):
+        script = (
+            f"import json\n"
+            f"{inspect.getsource(func)}\n"
+            f"result = {func.__name__}(*{repr(args)}, **{repr(kwargs)})\n"
+            f"print(json.dumps(result))"
+        )
 
-    cmd = ["ssh", "--", destination, "python3"]
+        cmd = ["ssh", "--", destination, "python3"]
 
-    result = subprocess.run(cmd, input=script, capture_output=True, text=True)
+        result = subprocess.run(
+            cmd,
+            input=script,
+            capture_output=capture_stdout,
+            text=True,
+        )
 
-    if result.returncode != 0:
-        raise Exception(result.stderr)
+        if result.returncode != 0:
+            raise Exception(result.stderr)
 
-    return json.loads(result.stdout)
+        if capture_stdout:
+            return json.loads(result.stdout)
+
+    return ssh_rpc
 
 
 def decky_ws_request(url: str, body: dict) -> dict:
@@ -317,6 +370,58 @@ def decky_ws_request(url: str, body: dict) -> dict:
         await writer.drain()
 
     return asyncio.run(request())
+
+
+def decky_tail_plugin_logs(plugin_name: str):
+    import subprocess
+    import sys
+    import time
+    from pathlib import Path
+
+    dir_poll_interval_secs = 0.25
+    tail_terminate_timeout_secs = 2
+
+    class NotSet:
+        pass
+
+    for basename in (
+        plugin_name,  # Original plugin name
+        plugin_name.replace(" ", "-"),  # "decky plugin build" replaces " " with "-"
+    ):
+        log_path = Path("homebrew/logs") / basename
+        if log_path.is_dir():
+            break
+    else:
+        raise Exception("Can't find plugin log directory")
+
+    log_file: type[NotSet] | None | Path = NotSet
+    tail_process: None | subprocess.Popen = None
+    while True:
+        try:
+            latest_file = max(
+                (file for file in log_path.iterdir()),
+                key=lambda file: file.stat().st_mtime,
+            )
+        except ValueError:
+            latest_file = None
+
+        if latest_file != log_file:
+            if tail_process:
+                try:
+                    tail_process.terminate()
+                    tail_process.wait(timeout=tail_terminate_timeout_secs)
+                except Exception:
+                    tail_process.kill()
+
+            if latest_file:
+                print(f"\033[33mTailing {latest_file}\033[m", file=sys.stderr)
+                tail_process = subprocess.Popen(["tail", "-f", str(latest_file)])
+            else:
+                print("\033[33mWaiting for a log file\033[m", file=sys.stderr)
+
+            log_file = latest_file
+
+        time.sleep(dir_poll_interval_secs)
 
 
 if __name__ == "__main__":
