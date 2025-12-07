@@ -1,0 +1,35 @@
+version: 2
+
+before:
+  hooks:
+    - uv build
+
+builds:
+  - skip: true
+
+archives:
+  - id: python-package
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    files:
+      - dist/*
+      - README.md
+      - LICENSE
+
+release:
+  github:
+    owner: nathforge
+    name: decky-remote
+  draft: false
+  prerelease: auto
+  name_template: "{{ .Tag }}"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'
+      - '^ci:'
+      - Merge pull request
+      - Merge branch
