@@ -1,29 +1,13 @@
 # Decky Remote
 
-I wrote this to quickly reload [Decky Loader](https://github.com/SteamDeckHomebrew/decky-loader) plugins:
+Development tool for Decky plugins.
 
-```shell
-$ decky-remote.py ssh loader/reload_plugin "Example Plugin"
-```
+## Features
 
-However it can call any websocket route:
-
-```shell
-$ decky-remote.py ssh utilities/ping
-$ decky-remote.py ssh loader/call_plugin_method "Example Plugin" start_timer
-```
-
-Or tail plugin logs (automatically picking up new log files):
-
-```shell
-$ decky-remote.py plugin logs "Example Plugin"
-```
+ 1. Tail logs: `decky-remote.py plugin logs "Example Plugin"`
+ 2. Call Decky websocket methods:
+    * Reload plugin: `decky-remote.py ssh loader/reload_plugin "Example Plugin"`
+    * Call plugin function: `decky-remote.py ssh loader/call_plugin_method "Example Plugin" start_timer`
+    * (See [the Decky Loader source](https://github.com/search?q=repo%3ASteamDeckHomebrew%2Fdecky-loader%20ws.add_route&type=code) for available routes.)
 
 ⚠️ This is a development tool that can break at any point. It is not part of Decky.
-
-See [the Decky Loader source](https://github.com/search?q=repo%3ASteamDeckHomebrew%2Fdecky-loader%20ws.add_route&type=code) for available routes.
-
-## How does it work?
-
-Decky Loader runs an HTTP server on http://localhost:1337. We connect to the
-Deck over SSH and call the websocket endpoint.
