@@ -51,6 +51,6 @@ def decky_tail_plugin_logs(plugin_name: str):
             else:
                 print("\033[33mWaiting for a log file\033[m", file=sys.stderr)
 
-        log_file = latest_file
         first_loop = False
+        log_file = latest_file
         time.sleep(dir_poll_interval_secs)
