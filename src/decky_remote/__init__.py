@@ -67,14 +67,17 @@ def main():
 
     args = parser.parse_args()
 
-    if args.func is cmd_ssh:
-        return cmd_ssh(args.destination, args.url, args.route, args.args)
+    try:
+        if args.func is cmd_ssh:
+            return cmd_ssh(args.destination, args.url, args.route, args.args)
 
-    if args.func is cmd_http:
-        return cmd_http(args.url, args.route, args.args)
+        if args.func is cmd_http:
+            return cmd_http(args.url, args.route, args.args)
 
-    if args.func is cmd_plugin_logs:
-        return cmd_plugin_logs(args.destination, args.plugin_name)
+        if args.func is cmd_plugin_logs:
+            return cmd_plugin_logs(args.destination, args.plugin_name)
+    except KeyboardInterrupt:
+        return
 
     raise Exception("Unimplemented command")
 
