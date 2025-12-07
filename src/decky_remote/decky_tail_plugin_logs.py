@@ -14,15 +14,19 @@ def decky_tail_plugin_logs(plugin_name: str):
     dir_poll_interval_secs = 0.25
     tail_terminate_timeout_secs = 2
 
-    for basename in (
-        plugin_name,  # Original plugin name
-        plugin_name.replace(" ", "-"),  # "decky plugin build" replaces " " with "-"
-    ):
-        log_path = Path("homebrew/logs") / basename
-        if log_path.is_dir():
-            break
-    else:
-        raise Exception("Can't find plugin log directory")
+    def iterdir_ignoring_missing_dir(path: Path):
+        try:
+            return path.iterdir()
+        except FileNotFoundError:
+            return ()
+
+    log_root = Path("homebrew/logs")
+    log_paths = (
+        # Original plugin name
+        log_root / plugin_name,
+        # "decky plugin build" replaces " " with "-"
+        log_root / plugin_name.replace(" ", "-"),
+    )
 
     first_loop = True
     log_file: None | Path = None
@@ -30,7 +34,11 @@ def decky_tail_plugin_logs(plugin_name: str):
     while True:
         try:
             latest_file = max(
-                (file for file in log_path.iterdir()),
+                (
+                    file
+                    for log_path in log_paths
+                    for file in iterdir_ignoring_missing_dir(log_path)
+                ),
                 key=lambda file: file.stat().st_mtime,
             )
         except ValueError:
