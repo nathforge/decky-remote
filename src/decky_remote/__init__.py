@@ -3,9 +3,9 @@ Decky Remote.
 
 Calls Decky Loader websocket routes over SSH, e.g:
 
-    $ decky-remote ws utilities/ping
-    $ decky-remote ws loader/reload_plugin "Example Plugin"
-    $ decky-remote ws loader/call_plugin_method "Example Plugin" start_timer
+    $ decky-remote ws call utilities/ping
+    $ decky-remote ws call loader/reload_plugin "Example Plugin"
+    $ decky-remote ws call loader/call_plugin_method "Example Plugin" start_timer
 
 Tails plugin logs:
 
