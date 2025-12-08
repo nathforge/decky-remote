@@ -6,8 +6,8 @@ Development tool for Decky plugins.
 
  1. Tail logs: `decky-remote plugin logs "Example Plugin"`
  2. Call Decky websocket methods:
-    * Reload plugin: `decky-remote ssh loader/reload_plugin "Example Plugin"`
-    * Call plugin function: `decky-remote ssh loader/call_plugin_method "Example Plugin" start_timer`
+    * Reload plugin: `decky-remote ws call loader/reload_plugin "Example Plugin"`
+    * Call plugin function: `decky-remote ws call loader/call_plugin_method "Example Plugin" start_timer`
     * (See [the Decky Loader source](https://github.com/search?q=repo%3ASteamDeckHomebrew%2Fdecky-loader%20ws.add_route&type=code) for available routes.)
 
 ## Usage

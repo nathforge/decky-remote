@@ -31,7 +31,7 @@ def decky_tail_plugin_logs(plugin_name: str):
 
     first_loop = True
     log_file: None | Path = None
-    tail_process: None | subprocess.Popen = None
+    tail_process: None | subprocess.Popen[bytes] = None
     while True:
         try:
             latest_file = max(
@@ -53,7 +53,7 @@ def decky_tail_plugin_logs(plugin_name: str):
             if tail_process:
                 try:
                     tail_process.terminate()
-                    tail_process.wait(timeout=tail_terminate_timeout_secs)
+                    _ = tail_process.wait(timeout=tail_terminate_timeout_secs)
                 except Exception:
                     tail_process.kill()
                 tail_process = None

@@ -1,4 +1,7 @@
-def decky_ws_request(url: str, body: dict) -> dict:
+from typing import Any
+
+
+def decky_ws_request(url: str, body: dict[str, "Any"]) -> dict[str, "Any"]:
     """
     Make a request to the Decky Loader websocket API.
 
@@ -18,22 +21,24 @@ def decky_ws_request(url: str, body: dict) -> dict:
     class WSClosed:
         pass
 
-    async def request() -> dict:
+    async def request() -> dict[Any, Any]:
         token = get_auth_token(url)
         message = await get_websocket_reply_or_error(url, token, json.dumps(body))
         if not message:
             raise Exception("No response from websocket")
         return message
 
-    def get_auth_token(url):
+    def get_auth_token(url: str) -> str:
         res = urlopen(f"{url}/auth/token")
         if res.status != 200:
             raise Exception(f"Unexpected HTTP {res.status} from /auth/token")
         return res.read().decode()
 
     async def get_websocket_reply_or_error(
-        url: str, token: str, body: str
-    ) -> None | dict:
+        url: str,
+        token: str,
+        body: str,
+    ) -> None | dict[Any, Any]:
         parsed = urlparse(url)
         is_https = parsed.scheme == "https"
         host = parsed.hostname
@@ -64,7 +69,7 @@ def decky_ws_request(url: str, body: dict) -> dict:
                 dec_msg = json.loads(msg)
                 if dec_msg["type"] == 1 or dec_msg["type"] == -1:  # Reply or Error
                     return dec_msg
-                raise Exception(f"Unexpected type in {msg}")
+                raise Exception(f"Unexpected type in {msg!r}")
         finally:
             writer.close()
             await writer.wait_closed()
