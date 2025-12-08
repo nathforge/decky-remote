@@ -11,6 +11,7 @@ Decky Remote.
 
 import argparse
 import json
+from importlib.metadata import version
 from typing import Any, Callable, Literal, cast
 
 from decky_remote.decky_tail_plugin_logs import decky_tail_plugin_logs
@@ -22,6 +23,9 @@ def main():
     parser = argparse.ArgumentParser(prog="decky-remote")
 
     subparsers = parser.add_subparsers(dest="command", required=True)
+
+    version_parser = subparsers.add_parser("version", help="Show version")
+    version_parser.set_defaults(func=cmd_version)
 
     ws_parser = subparsers.add_parser("ws")
     ws_subparsers = ws_parser.add_subparsers(dest="ws_command", required=True)
@@ -67,6 +71,9 @@ def main():
 
 
 def run_command(args):
+    if args.func is cmd_version:
+        return cmd_version()
+
     if args.func is cmd_ws_call:
         return cmd_ws_call(
             cast(Literal["ssh"] | Literal["http"], args.transport),
@@ -83,6 +90,14 @@ def run_command(args):
         )
 
     raise Exception("Unimplemented command")
+
+
+def cmd_version() -> None:
+    try:
+        pkg_version = version("decky-remote")
+        print(pkg_version)
+    except Exception:
+        print("unknown")
 
 
 def cmd_ws_call(
