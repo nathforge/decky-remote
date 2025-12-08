@@ -17,7 +17,6 @@ Development tool for Decky plugins.
 
 ## Development
 
- * `uv sync`
  * `uv run decky-remote`
 
 Creating a release: `TAG=vX.Y.Z && git tag $TAG && git push origin $TAG`
