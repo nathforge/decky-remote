@@ -45,7 +45,11 @@ def decky_tail_plugin_logs(plugin_name: str):
         except ValueError:
             latest_file = None
 
-        if first_loop or latest_file != log_file:
+        # Check if the latest file has changed, or it's the first loop.
+        # (We only track the first loop to show "Waiting for a log file" -
+        # otherwise on the first loop `latest_file == log_file == None`,
+        # and the below logic wouldn't trigger.)
+        if latest_file != log_file or first_loop:
             if tail_process:
                 try:
                     tail_process.terminate()
