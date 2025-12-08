@@ -43,5 +43,4 @@ def make_ssh_rpc(
             return json.loads(result.stdout)
         return None
 
-    _ = functools.update_wrapper(ssh_rpc, func)
-    return ssh_rpc
+    return functools.update_wrapper(ssh_rpc, func)

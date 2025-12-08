@@ -15,6 +15,7 @@ def decky_ws_request(url: str, body: dict[str, "Any"]) -> dict[str, "Any"]:
     import os
     import ssl
     import struct
+    from typing import Any
     from urllib.parse import urlparse
     from urllib.request import urlopen
 
