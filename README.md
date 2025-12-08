@@ -13,7 +13,7 @@ Development tool for Decky plugins.
 ## Usage
 
  * uv: `uvx decky-remote`
- * Python: `pip install decky-remote`. `decky-remote` is now available.
+ * pip: `pip install decky-remote`. `decky-remote` is now available.
 
 ## Development
 
