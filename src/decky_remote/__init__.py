@@ -14,7 +14,7 @@ Tails plugin logs:
 
 import argparse
 import json
-from typing import Literal, cast
+from typing import Any, Callable, Literal, cast
 
 from decky_remote.decky_tail_plugin_logs import decky_tail_plugin_logs
 from decky_remote.decky_ws_request import decky_ws_request
@@ -95,6 +95,8 @@ def cmd_ws_call(
     route: str,
     args: list[str],
 ) -> None:
+    ws_request: Callable[[str, dict[str, Any]], None | dict[str, Any]]
+
     if transport == "ssh":
         ws_request = make_ssh_rpc(
             destination,
@@ -116,7 +118,7 @@ def cmd_ws_call(
     res_message = ws_request(url, req_message)
 
     if res_message is None:
-        raise Exception("No response from websocket")
+        raise Exception("Websocket closed before receiving a response")
 
     if res_message["type"] == 1:  # Reply
         print(json.dumps(res_message["result"]))
@@ -125,7 +127,7 @@ def cmd_ws_call(
     if res_message["type"] == -1:  # Error
         raise Exception(res_message["error"])
 
-    raise Exception(f"Unknown type in {res_message}")
+    raise Exception(f"Unexpected type in {res_message}")
 
 
 def cmd_plugin_logs(destination: str, plugin_name: str) -> None:
