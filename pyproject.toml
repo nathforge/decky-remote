@@ -9,6 +9,9 @@ description = "Development tool for Decky plugins"
 readme = "README.md"
 requires-python = ">=3.8"
 license = {text = "GPL-3.0-or-later"}
+dependencies = [
+    "typer>=0.9.0",
+]
 authors = [
     { name = "Nathan Reynolds" }
 ]
