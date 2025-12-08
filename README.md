@@ -12,7 +12,7 @@ Development tool for Decky plugins.
 
 ## Usage
 
- * uv: `uvx decky-remote ssh utilities/ping`
+ * uv: `uvx decky-remote`
  * Python: clone this repo then `python -m pip install .`. `decky-remote` is now available.
 
 ## Development
