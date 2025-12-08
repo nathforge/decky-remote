@@ -21,6 +21,7 @@ def decky_tail_plugin_logs(plugin_name: str):
             return ()
 
     log_root = Path("homebrew/logs")
+
     log_paths = (
         # Original plugin name
         log_root / plugin_name,
