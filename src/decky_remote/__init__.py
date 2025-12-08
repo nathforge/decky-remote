@@ -133,4 +133,5 @@ def cmd_plugin_logs(destination: str, plugin_name: str) -> None:
         decky_tail_plugin_logs,
         capture_stdout=False,
     )
+
     ssh_rpc_decky_tail_plugin_logs(plugin_name)
