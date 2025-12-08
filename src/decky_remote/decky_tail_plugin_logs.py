@@ -16,9 +16,9 @@ def decky_tail_plugin_logs(plugin_name: str):
 
     def iterdir_ignoring_missing_dir(path: Path):
         try:
-            return path.iterdir()
+            yield from path.iterdir()
         except FileNotFoundError:
-            return ()
+            pass
 
     log_root = Path("homebrew/logs")
 
