@@ -3,7 +3,7 @@ Decky Remote.
 
  * Tails plugin logs:
    * `decky-remote plugin logs "Example Plugin"`
- * Calls Decky Loader websocket routes over SSH:
+ * Calls Decky Loader websocket routes:
    * `decky-remote ws call utilities/ping`
    * `decky-remote ws call loader/reload_plugin "Example Plugin"`
    * `decky-remote ws call loader/call_plugin_method "Example Plugin" start_timer`
