@@ -39,6 +39,17 @@ def decky_ws_request(url: str, body: dict[str, "Any"]) -> dict[str, "Any"]:
         url: str,
         token: str,
         body: str,
+        timeout: int = 30.0,
+    ):
+        return await asyncio.wait_for(
+            _get_websocket_reply_or_error(url, token, body),
+            timeout,
+        )
+
+    async def _get_websocket_reply_or_error(
+        url: str,
+        token: str,
+        body: str,
     ) -> None | dict[Any, Any]:
         parsed = urlparse(url)
         is_https = parsed.scheme == "https"
@@ -70,6 +81,8 @@ def decky_ws_request(url: str, body: dict[str, "Any"]) -> dict[str, "Any"]:
                 dec_msg = json.loads(msg)
                 if dec_msg["type"] == 1 or dec_msg["type"] == -1:  # Reply or Error
                     return dec_msg
+                if dec_msg["type"] == 3:  # Event
+                    continue
                 raise Exception(f"Unexpected type in {msg!r}")
         finally:
             writer.close()
