@@ -30,10 +30,22 @@ def decky_cdp_screenshot(tab_title: str, cdp_url: str = "http://localhost:8080")
         if res.status != 200:
             raise Exception(f"Unexpected HTTP {res.status} from {cdp_url}/json")
         tabs = json.loads(res.read().decode())
+        titles = [tab.get("title") for tab in tabs]
+
         for tab in tabs:
             if tab.get("title") == tab_title:
                 return tab
-        titles = [tab.get("title") for tab in tabs]
+
+        # No exact match - accept an unambiguous prefix, so e.g. "MainMenu"
+        # matches the real title "MainMenu_uid2" without needing the exact
+        # (and not always predictable) suffix.
+        prefix_matches = [tab for tab in tabs if (tab.get("title") or "").startswith(tab_title)]
+        if len(prefix_matches) == 1:
+            return prefix_matches[0]
+        if prefix_matches:
+            match_titles = [tab.get("title") for tab in prefix_matches]
+            raise Exception(f"{tab_title!r} matches multiple tabs: {match_titles}")
+
         raise Exception(f"Tab {tab_title!r} not found. Available tabs: {titles}")
 
     async def capture_screenshot(ws_url: str) -> str:

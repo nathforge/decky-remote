@@ -7,22 +7,25 @@ Decky Remote.
    * `decky-remote ws call utilities/ping`
    * `decky-remote ws call loader/reload_plugin "Example Plugin"`
    * `decky-remote ws call loader/call_plugin_method "Example Plugin" start_timer`
- * Runs JS live in a CEF tab (default: SharedJSContext), e.g. to poke at
-   `window.SteamClient` / `window.DFL`:
+ * Runs JS live in a CEF tab (default: SharedJSContext, where plugin/DFL JS
+   actually runs), e.g. to poke at `window.SteamClient` / `window.DFL`:
    * `decky-remote cef eval "1 + 1"`
    * `decky-remote cef eval --tab QuickAccess "document.title"`
- * Injects/removes CSS live into a CEF tab, targeting an actual element
-   (same as real theming plugins like CSSLoader do):
-   * `decky-remote cef css-inject --tab "Steam Big Picture Mode" "img { outline: 4px solid magenta; }"`
-   * `decky-remote cef css-remove --tab "Steam Big Picture Mode" <css-id-from-above>`
- * Screenshots a CEF tab (default: Steam Big Picture Mode, the actual
-   on-screen UI - *not* SharedJSContext, which renders off-screen at 2x2px):
+ * Injects/removes CSS live into a CEF tab (default: Steam Big Picture Mode,
+   the real on-screen UI), targeting an actual element (same as real theming
+   plugins like CSSLoader do, not `body`/`html` directly - see the
+   docstring):
+   * `decky-remote cef css-inject "img { outline: 4px solid magenta; }"`
+   * `decky-remote cef css-remove <css-id-from-above>`
+ * Screenshots a CEF tab (default: Steam Big Picture Mode) to confirm what a
+   change actually looks like:
    * `decky-remote cef screenshot screenshot.png`
 
- Note: SharedJSContext (the default for `cef eval`/`cef css-inject`) is where
- plugin/DFL JS actually runs, but it isn't what's on screen - see `cef
- eval`'s docstring. For a visible change, pass `--tab "Steam Big Picture
- Mode"` and verify with `cef screenshot`.
+ All `cef` subcommands accept an unambiguous prefix for `--tab` (e.g.
+ `MainMenu` resolves to the real title `MainMenu_uid2`), and each picks the
+ right default tab for what it's for - SharedJSContext for `eval` (logic),
+ Steam Big Picture Mode for `css-inject`/`css-remove`/`screenshot` (visual) -
+ so you don't need to pass `--tab` for the common case.
 """
 
 import base64
@@ -34,6 +37,7 @@ from typing import Annotated, Any, Callable, Literal
 
 import typer
 
+from decky_remote.decky_cdp_list_tabs import decky_cdp_list_tabs
 from decky_remote.decky_cdp_screenshot import decky_cdp_screenshot
 from decky_remote.decky_tail_plugin_logs import decky_tail_plugin_logs
 from decky_remote.decky_ws_request import decky_ws_request
@@ -50,13 +54,20 @@ app.add_typer(cef_app, name="cef")
 
 default_ssh = "deck@steamdeck.local"
 default_ws_url = "http://localhost:1337"
-default_cef_tab = "SharedJSContext"
-default_screenshot_tab = "Steam Big Picture Mode"
+# Where plugin/DFL JS actually runs - the right default for `cef eval`.
+default_logic_tab = "SharedJSContext"
+# The real on-screen UI - the right default for anything visual.
+default_visual_tab = "Steam Big Picture Mode"
 
 SshDestination = Annotated[str, typer.Option(help="SSH user@host")]
 WsUrl = Annotated[str, typer.Option(help="Decky Loader URL")]
 Transport = Annotated[Literal["ssh", "http"], typer.Option()]
-CefTab = Annotated[str, typer.Option(help="CEF tab title, e.g. SharedJSContext, QuickAccess, MainMenu")]
+CefTab = Annotated[
+    str,
+    typer.Option(
+        help="CEF tab title, or an unambiguous prefix of one (e.g. MainMenu for MainMenu_uid2)"
+    ),
+]
 
 
 def main():
@@ -132,6 +143,34 @@ def ws_call(
     raise typer.Exit(code=1)
 
 
+def resolve_tab(tab: str, destination: str) -> str:
+    """
+    Resolve a tab title (or an unambiguous prefix of one) against the CEF
+    tabs currently open on the Deck.
+
+    Decky's own websocket routes (utilities/execute_in_tab etc.) do an exact
+    title match and, on a miss, raise an unhandled server-side exception that
+    kills the whole websocket connection ungracefully. Resolving client-side
+    first gives a clean error instead, and tolerates titles with a
+    non-obvious suffix (e.g. "MainMenu" for the real "MainMenu_uid2").
+    """
+    ssh_rpc_list_tabs = make_ssh_rpc(destination, decky_cdp_list_tabs, capture_stdout=True)
+    tabs = ssh_rpc_list_tabs()
+    assert tabs is not None
+    titles = [t["title"] for t in tabs]
+
+    if tab in titles:
+        return tab
+
+    prefix_matches = [title for title in titles if title.startswith(tab)]
+    if len(prefix_matches) == 1:
+        return prefix_matches[0]
+    if prefix_matches:
+        raise typer.BadParameter(f"{tab!r} matches multiple tabs: {prefix_matches}")
+
+    raise typer.BadParameter(f"Tab {tab!r} not found. Available tabs: {titles}")
+
+
 @ws_app.command()
 def call(
     route: str,
@@ -164,7 +203,7 @@ def logs(
 @cef_app.command()
 def eval(
     code: str,
-    tab: CefTab = default_cef_tab,
+    tab: CefTab = default_logic_tab,
     run_async: Annotated[
         bool, typer.Option(help="Await the result, e.g. for a Promise")
     ] = False,
@@ -181,9 +220,10 @@ def eval(
     For a visual change, target `--tab "Steam Big Picture Mode"` instead (the
     real on-screen UI - verify with `cef screenshot`).
     """
+    resolved_tab = resolve_tab(tab, destination)
     result = ws_call(
         "utilities/execute_in_tab",
-        [tab, run_async, code],
+        [resolved_tab, run_async, code],
         transport,
         destination,
         url,
@@ -199,7 +239,7 @@ def eval(
 @cef_app.command("css-inject")
 def css_inject(
     style: str,
-    tab: CefTab = default_cef_tab,
+    tab: CefTab = default_visual_tab,
     transport: Transport = "ssh",
     destination: SshDestination = default_ssh,
     url: WsUrl = default_ws_url,
@@ -207,8 +247,9 @@ def css_inject(
     """
     Inject CSS into a CEF tab, printing a css id to pass to `cef css-remove`.
 
-    To actually see the change, target `--tab "Steam Big Picture Mode"` (the
-    real on-screen UI), not the default SharedJSContext (off-screen, 2x2px).
+    Defaults to "Steam Big Picture Mode" (the real on-screen UI), not
+    SharedJSContext (the `cef eval` default), which renders off-screen at
+    2x2px and would never be visible.
 
     Target an actual element selector (a class name, `img`, etc. - the same
     way a real theming plugin like CSSLoader works) rather than `body`/`html`
@@ -217,9 +258,10 @@ def css_inject(
     background/outline - ordinary CSS stacking order, not a Steam-specific
     block. Verify with `cef screenshot`.
     """
+    resolved_tab = resolve_tab(tab, destination)
     css_id = ws_call(
         "utilities/inject_css_into_tab",
-        [tab, style],
+        [resolved_tab, style],
         transport,
         destination,
         url,
@@ -230,15 +272,16 @@ def css_inject(
 @cef_app.command("css-remove")
 def css_remove(
     css_id: str,
-    tab: CefTab = default_cef_tab,
+    tab: CefTab = default_visual_tab,
     transport: Transport = "ssh",
     destination: SshDestination = default_ssh,
     url: WsUrl = default_ws_url,
 ) -> None:
-    """Remove previously-injected CSS from a CEF tab"""
+    """Remove previously-injected CSS from a CEF tab (same --tab you injected with)"""
+    resolved_tab = resolve_tab(tab, destination)
     ws_call(
         "utilities/remove_css_from_tab",
-        [tab, css_id],
+        [resolved_tab, css_id],
         transport,
         destination,
         url,
@@ -248,7 +291,7 @@ def css_remove(
 @cef_app.command()
 def screenshot(
     output: Annotated[Path, typer.Argument()] = Path("screenshot.png"),
-    tab: CefTab = default_screenshot_tab,
+    tab: CefTab = default_visual_tab,
     destination: SshDestination = default_ssh,
 ) -> None:
     """
@@ -258,7 +301,8 @@ def screenshot(
     DevTools Protocol rather than through Decky's websocket API, since Decky
     only exposes JS evaluation (utilities/execute_in_tab), not
     Page.captureScreenshot. SSH-only - there's no equivalent loopback port to
-    forward the way Decky's own API has.
+    forward the way Decky's own API has. Resolves `--tab` the same way as the
+    other `cef` subcommands (exact title, or an unambiguous prefix).
 
     Defaults to "Steam Big Picture Mode" (the real on-screen UI), not
     SharedJSContext (the `cef eval`/`cef css-inject` default), which renders
