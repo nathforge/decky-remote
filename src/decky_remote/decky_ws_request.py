@@ -80,10 +80,17 @@ def decky_ws_request(url: str, body: dict[str, "Any"]) -> dict[str, "Any"]:
                     return None
                 dec_msg = json.loads(msg)
                 if dec_msg["type"] == 1 or dec_msg["type"] == -1:  # Reply or Error
+                    # Acknowledge receipt (type 3, RECEIVED_RESPONSE) so the
+                    # loader drops its cached reply for this id. Without this,
+                    # the loader keeps the reply cached indefinitely, and the
+                    # *next* call that reuses this id gets this stale reply
+                    # played back instead of actually running.
+                    await ws_send(writer, json.dumps({"type": 3, "id": dec_msg["id"]}))
                     return dec_msg
-                if dec_msg["type"] == 3:  # Event
-                    continue
-                raise Exception(f"Unexpected type in {msg!r}")
+                # Anything else (events broadcast on the shared connection,
+                # resync housekeeping, etc.) isn't a reply to our call - keep
+                # waiting for it instead of erroring out.
+                continue
         finally:
             writer.close()
             await writer.wait_closed()

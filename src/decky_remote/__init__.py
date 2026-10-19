@@ -17,6 +17,7 @@ Decky Remote.
 """
 
 import json
+import random
 from importlib.metadata import version as get_version
 from typing import Annotated, Any, Callable, Literal
 
@@ -96,7 +97,10 @@ def ws_call(
 
     req_message = {
         "type": 0,
-        "id": 0,
+        # A random id, rather than always 0, so we don't collide with a call
+        # the real Decky frontend has in flight on its own id sequence (we
+        # briefly take over its single shared websocket connection).
+        "id": random.randint(1, 2**31 - 1),
         "route": route,
         "args": args,
     }
