@@ -11,18 +11,30 @@ Decky Remote.
    `window.SteamClient` / `window.DFL`:
    * `decky-remote cef eval "1 + 1"`
    * `decky-remote cef eval --tab QuickAccess "document.title"`
- * Injects/removes CSS live into a CEF tab:
-   * `decky-remote cef css-inject "body { background: red; }"`
-   * `decky-remote cef css-remove <css-id-from-above>`
+ * Injects/removes CSS live into a CEF tab, targeting an actual element
+   (same as real theming plugins like CSSLoader do):
+   * `decky-remote cef css-inject --tab "Steam Big Picture Mode" "img { outline: 4px solid magenta; }"`
+   * `decky-remote cef css-remove --tab "Steam Big Picture Mode" <css-id-from-above>`
+ * Screenshots a CEF tab (default: Steam Big Picture Mode, the actual
+   on-screen UI - *not* SharedJSContext, which renders off-screen at 2x2px):
+   * `decky-remote cef screenshot screenshot.png`
+
+ Note: SharedJSContext (the default for `cef eval`/`cef css-inject`) is where
+ plugin/DFL JS actually runs, but it isn't what's on screen - see `cef
+ eval`'s docstring. For a visible change, pass `--tab "Steam Big Picture
+ Mode"` and verify with `cef screenshot`.
 """
 
+import base64
 import json
 import random
 from importlib.metadata import version as get_version
+from pathlib import Path
 from typing import Annotated, Any, Callable, Literal
 
 import typer
 
+from decky_remote.decky_cdp_screenshot import decky_cdp_screenshot
 from decky_remote.decky_tail_plugin_logs import decky_tail_plugin_logs
 from decky_remote.decky_ws_request import decky_ws_request
 from decky_remote.ssh_rpc import make_ssh_rpc
@@ -39,6 +51,7 @@ app.add_typer(cef_app, name="cef")
 default_ssh = "deck@steamdeck.local"
 default_ws_url = "http://localhost:1337"
 default_cef_tab = "SharedJSContext"
+default_screenshot_tab = "Steam Big Picture Mode"
 
 SshDestination = Annotated[str, typer.Option(help="SSH user@host")]
 WsUrl = Annotated[str, typer.Option(help="Decky Loader URL")]
@@ -159,7 +172,15 @@ def eval(
     destination: SshDestination = default_ssh,
     url: WsUrl = default_ws_url,
 ) -> None:
-    """Evaluate JS in a CEF tab, via Decky's remote debugging support"""
+    """
+    Evaluate JS in a CEF tab, via Decky's remote debugging support.
+
+    Defaults to SharedJSContext, where plugin backend-frontend JS (and
+    window.SteamClient/window.DFL) actually run - but note this tab renders
+    off-screen at 2x2px, so it's for logic/API calls, not visual changes.
+    For a visual change, target `--tab "Steam Big Picture Mode"` instead (the
+    real on-screen UI - verify with `cef screenshot`).
+    """
     result = ws_call(
         "utilities/execute_in_tab",
         [tab, run_async, code],
@@ -183,7 +204,19 @@ def css_inject(
     destination: SshDestination = default_ssh,
     url: WsUrl = default_ws_url,
 ) -> None:
-    """Inject CSS into a CEF tab, printing a css id to pass to `cef css-remove`"""
+    """
+    Inject CSS into a CEF tab, printing a css id to pass to `cef css-remove`.
+
+    To actually see the change, target `--tab "Steam Big Picture Mode"` (the
+    real on-screen UI), not the default SharedJSContext (off-screen, 2x2px).
+
+    Target an actual element selector (a class name, `img`, etc. - the same
+    way a real theming plugin like CSSLoader works) rather than `body`/`html`
+    directly: styling `body`/`html` itself is invisible in practice, since
+    the real UI fills the entire viewport and paints on top of body's own
+    background/outline - ordinary CSS stacking order, not a Steam-specific
+    block. Verify with `cef screenshot`.
+    """
     css_id = ws_call(
         "utilities/inject_css_into_tab",
         [tab, style],
@@ -210,3 +243,33 @@ def css_remove(
         destination,
         url,
     )
+
+
+@cef_app.command()
+def screenshot(
+    output: Annotated[Path, typer.Argument()] = Path("screenshot.png"),
+    tab: CefTab = default_screenshot_tab,
+    destination: SshDestination = default_ssh,
+) -> None:
+    """
+    Save a screenshot of a CEF tab to a local PNG file.
+
+    Unlike `cef eval`/`cef css-inject`, this talks directly to the Chrome
+    DevTools Protocol rather than through Decky's websocket API, since Decky
+    only exposes JS evaluation (utilities/execute_in_tab), not
+    Page.captureScreenshot. SSH-only - there's no equivalent loopback port to
+    forward the way Decky's own API has.
+
+    Defaults to "Steam Big Picture Mode" (the real on-screen UI), not
+    SharedJSContext (the `cef eval`/`cef css-inject` default), which renders
+    off-screen at 2x2px and will just produce a tiny blank image.
+    """
+    ssh_rpc_cdp_screenshot = make_ssh_rpc(
+        destination,
+        decky_cdp_screenshot,
+        capture_stdout=True,
+    )
+    base64_png = ssh_rpc_cdp_screenshot(tab)
+    assert base64_png is not None
+    output.write_bytes(base64.b64decode(base64_png))
+    typer.echo(f"Saved {output}")
