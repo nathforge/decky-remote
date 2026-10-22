@@ -20,6 +20,9 @@ Decky Remote.
  * Screenshots a CEF tab (default: Steam Big Picture Mode) to confirm what a
    change actually looks like:
    * `decky-remote cef screenshot screenshot.png`
+ * Screenshots gamescope's actual on-screen output (a running game, not just
+   Steam's own UI layer):
+   * `decky-remote screenshot screenshot.png`
 
  All `cef` subcommands accept an unambiguous prefix for `--tab` (e.g.
  `MainMenu` resolves to the real title `MainMenu_uid2`), and each picks the
@@ -39,6 +42,7 @@ import typer
 
 from decky_remote.decky_cdp_list_tabs import decky_cdp_list_tabs
 from decky_remote.decky_cdp_screenshot import decky_cdp_screenshot
+from decky_remote.decky_gamescope_screenshot import decky_gamescope_screenshot
 from decky_remote.decky_tail_plugin_logs import decky_tail_plugin_logs
 from decky_remote.decky_ws_request import decky_ws_request
 from decky_remote.ssh_rpc import make_ssh_rpc
@@ -198,6 +202,31 @@ def logs(
     )
 
     ssh_rpc_decky_tail_plugin_logs(plugin_name)
+
+
+@app.command()
+def screenshot(
+    output: Annotated[Path, typer.Argument()] = Path("screenshot.png"),
+    timeout: Annotated[float, typer.Option(help="Seconds to keep retrying before giving up")] = 5.0,
+    destination: SshDestination = default_ssh,
+) -> None:
+    """
+    Save a screenshot of gamescope's actual on-screen output to a local PNG file.
+
+    Unlike `cef screenshot`, which captures a single CEF tab (e.g. Steam's own
+    UI) via the Chrome DevTools Protocol, this captures whatever is really on
+    screen - including a running game - via gamescope's own `gamescopectl
+    screenshot` debug command. SSH-only, same as `cef screenshot`.
+    """
+    ssh_rpc_gamescope_screenshot = make_ssh_rpc(
+        destination,
+        decky_gamescope_screenshot,
+        capture_stdout=True,
+    )
+    base64_png = ssh_rpc_gamescope_screenshot(timeout)
+    assert base64_png is not None
+    output.write_bytes(base64.b64decode(base64_png))
+    typer.echo(f"Saved {output}")
 
 
 @cef_app.command()

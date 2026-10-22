@@ -20,6 +20,9 @@ Development tool for Decky plugins.
  5. Screenshot a CEF tab to see what a change actually looks like:
     * `decky-remote cef screenshot screenshot.png`
     * Talks directly to the Chrome DevTools Protocol (`Page.captureScreenshot`), since Decky's own websocket API only exposes JS evaluation, not screenshots. SSH-only.
+ 6. Screenshot gamescope's actual on-screen output - a running game, not just Steam's own UI layer:
+    * `decky-remote screenshot screenshot.png`
+    * Uses gamescope's own `gamescopectl screenshot` debug command, so it captures the real composited frame the user sees, unlike `cef screenshot` which is limited to a single CEF tab (Steam's own UI; never a running game). SSH-only.
 
 ### Picking a tab
 
