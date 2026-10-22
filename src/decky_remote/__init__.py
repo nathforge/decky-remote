@@ -43,6 +43,7 @@ import typer
 from decky_remote.decky_cdp_list_tabs import decky_cdp_list_tabs
 from decky_remote.decky_cdp_screenshot import decky_cdp_screenshot
 from decky_remote.decky_gamescope_screenshot import decky_gamescope_screenshot
+from decky_remote.decky_protontricks_run import decky_protontricks_run
 from decky_remote.decky_tail_plugin_logs import decky_tail_plugin_logs
 from decky_remote.decky_ws_request import decky_ws_request
 from decky_remote.ssh_rpc import make_ssh_rpc
@@ -227,6 +228,39 @@ def screenshot(
     assert base64_png is not None
     output.write_bytes(base64.b64decode(base64_png))
     typer.echo(f"Saved {output}")
+
+
+@app.command()
+def protontricks(
+    appid: int,
+    args: Annotated[list[str], typer.Argument()],
+    timeout: Annotated[float, typer.Option(help="Seconds before giving up")] = 170.0,
+    destination: SshDestination = default_ssh,
+) -> None:
+    """
+    Run `protontricks <appid> <args...>` against the Deck's real gamescope
+    session, e.g. to install a winetricks verb into a game's Proton prefix:
+    `decky-remote protontricks 2675919810 vcrun2022`.
+
+    Unlike running protontricks over a bare SSH shell, this reconstructs the
+    actual DISPLAY/XDG_RUNTIME_DIR the gamescope session exports for itself
+    first - winetricks verbs that run a real installer bootstrap (not just
+    extract DLLs) create a window even when "quiet", and fail outright with
+    no display attached.
+    """
+    ssh_rpc_protontricks_run = make_ssh_rpc(
+        destination,
+        decky_protontricks_run,
+        capture_stdout=True,
+    )
+    result = ssh_rpc_protontricks_run(appid, args, timeout)
+    assert result is not None
+    if result["stdout"]:
+        typer.echo(result["stdout"])
+    if result["stderr"]:
+        typer.echo(result["stderr"], err=True)
+    if result["returncode"] != 0:
+        raise typer.Exit(code=result["returncode"])
 
 
 @cef_app.command()
